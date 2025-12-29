@@ -1,0 +1,1431 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Imasa Chat - Продвинутый чат с ботами</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            transition: all 0.3s ease;
+        }
+
+        :root {
+            --primary: #6a11cb;
+            --secondary: #2575fc;
+            --dark: #0a0a0a;
+            --dark-secondary: #1a1a1a;
+            --light: #f5f5f5;
+            --text: #e0e0e0;
+            --accent: #9d4edd;
+            --success: #4caf50;
+            --warning: #ff9800;
+            --danger: #f44336;
+            --info: #2196f3;
+        }
+
+        body {
+            background: var(--dark);
+            color: var(--text);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .app-container {
+            display: flex;
+            height: 100vh;
+        }
+
+        /* Панель авторизации */
+        .auth-panel {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, var(--dark) 0%, #1a0a2e 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .auth-form {
+            background: rgba(30, 30, 30, 0.95);
+            padding: 40px;
+            border-radius: 20px;
+            width: 100%;
+            max-width: 450px;
+            border: 2px solid var(--primary);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+        }
+
+        .auth-tabs {
+            display: flex;
+            margin-bottom: 30px;
+            border-bottom: 2px solid rgba(106, 17, 203, 0.3);
+        }
+
+        .auth-tab {
+            flex: 1;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            background: none;
+            border: none;
+            color: var(--text);
+            font-size: 18px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .auth-tab.active {
+            color: var(--primary);
+            border-bottom: 3px solid var(--primary);
+        }
+
+        .auth-content {
+            display: none;
+        }
+
+        .auth-content.active {
+            display: block;
+        }
+
+        /* Основной интерфейс */
+        .sidebar {
+            width: 350px;
+            background: rgba(26, 26, 26, 0.9);
+            border-right: 1px solid rgba(106, 17, 203, 0.3);
+            display: flex;
+            flex-direction: column;
+            backdrop-filter: blur(10px);
+        }
+
+        .chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .wallpaper {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0.05;
+            z-index: -1;
+        }
+
+        /* Настройки */
+        .settings-panel {
+            position: absolute;
+            top: 0;
+            right: -500px;
+            width: 500px;
+            height: 100%;
+            background: rgba(26, 26, 26, 0.95);
+            border-left: 2px solid var(--primary);
+            padding: 30px;
+            overflow-y: auto;
+            z-index: 100;
+            transition: right 0.4s ease;
+        }
+
+        .settings-panel.active {
+            right: 0;
+        }
+
+        .settings-section {
+            margin-bottom: 40px;
+            padding-bottom: 30px;
+            border-bottom: 1px solid rgba(106, 17, 203, 0.3);
+        }
+
+        .color-picker {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .color-option {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: transform 0.3s;
+        }
+
+        .color-option:hover {
+            transform: scale(1.1);
+        }
+
+        .color-option.active {
+            border-color: white;
+            box-shadow: 0 0 15px white;
+        }
+
+        /* Боты */
+        .bot-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+
+        /* Рандомер */
+        .randomizer-section {
+            background: rgba(106, 17, 203, 0.1);
+            padding: 20px;
+            border-radius: 15px;
+            margin-top: 20px;
+        }
+
+        .random-number {
+            font-size: 48px;
+            text-align: center;
+            font-weight: bold;
+            color: var(--primary);
+            margin: 20px 0;
+            text-shadow: 0 0 20px rgba(106, 17, 203, 0.5);
+        }
+
+        /* Стикеры */
+        .sticker-picker {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        .sticker {
+            font-size: 32px;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 10px;
+            transition: all 0.3s;
+        }
+
+        .sticker:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: scale(1.2);
+        }
+
+        /* Группы */
+        .group-creator {
+            background: rgba(37, 117, 252, 0.1);
+            padding: 20px;
+            border-radius: 15px;
+            margin-top: 20px;
+        }
+
+        /* Анимации */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(-100%); }
+            to { transform: translateX(0); }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes glow {
+            0%, 100% { box-shadow: 0 0 10px var(--primary); }
+            50% { box-shadow: 0 0 20px var(--primary); }
+        }
+
+        /* Адаптивность */
+        @media (max-width: 1024px) {
+            .sidebar, .settings-panel {
+                width: 100%;
+                position: absolute;
+                top: 0;
+                height: 100%;
+            }
+            
+            .settings-panel {
+                right: -100%;
+            }
+            
+            .settings-panel.active {
+                right: 0;
+            }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Кнопки и элементы */
+        .btn {
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(106, 17, 203, 0.4);
+        }
+
+        .btn-danger {
+            background: linear-gradient(45deg, var(--danger), #ff6b6b);
+        }
+
+        .btn-success {
+            background: linear-gradient(45deg, var(--success), #66bb6a);
+        }
+
+        .btn-warning {
+            background: linear-gradient(45deg, var(--warning), #ffb74d);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text);
+            font-weight: 500;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(106, 17, 203, 0.3);
+            border-radius: 10px;
+            color: var(--text);
+            font-size: 16px;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 15px rgba(106, 17, 203, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <!-- Панель авторизации -->
+    <div class="auth-panel" id="authPanel">
+        <div class="auth-form">
+            <div class="auth-tabs">
+                <button class="auth-tab active" data-tab="login">Вход</button>
+                <button class="auth-tab" data-tab="register">Регистрация</button>
+            </div>
+            
+            <div class="auth-content active" id="loginTab">
+                <h2 style="text-align: center; margin-bottom: 30px; color: var(--primary);">Вход в Imasa Chat</h2>
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="loginUsername"><i class="fas fa-user"></i> Имя пользователя</label>
+                        <input type="text" id="loginUsername" class="form-control" placeholder="Ваш логин" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="loginPassword"><i class="fas fa-lock"></i> Пароль</label>
+                        <input type="password" id="loginPassword" class="form-control" placeholder="Ваш пароль" required>
+                    </div>
+                    <button type="submit" class="btn" style="width: 100%;">
+                        <i class="fas fa-sign-in-alt"></i> Войти
+                    </button>
+                </form>
+            </div>
+            
+            <div class="auth-content" id="registerTab">
+                <h2 style="text-align: center; margin-bottom: 30px; color: var(--primary);">Регистрация</h2>
+                <form id="registerForm">
+                    <div class="form-group">
+                        <label for="registerUsername"><i class="fas fa-user"></i> Имя пользователя</label>
+                        <input type="text" id="registerUsername" class="form-control" placeholder="Придумайте логин" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="registerEmail"><i class="fas fa-envelope"></i> Email</label>
+                        <input type="email" id="registerEmail" class="form-control" placeholder="Ваш email">
+                    </div>
+                    <div class="form-group">
+                        <label for="registerPassword"><i class="fas fa-lock"></i> Пароль</label>
+                        <input type="password" id="registerPassword" class="form-control" placeholder="Придумайте пароль" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="registerAvatar"><i class="fas fa-image"></i> Аватар (эмодзи)</label>
+                        <input type="text" id="registerAvatar" class="form-control" placeholder="👑 🦊 🎭" value="👤">
+                    </div>
+                    <button type="submit" class="btn" style="width: 100%;">
+                        <i class="fas fa-user-plus"></i> Зарегистрироваться
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Основной интерфейс -->
+    <div class="app-container hidden" id="mainApp">
+        <!-- Боковая панель -->
+        <div class="sidebar" id="sidebar">
+            <div style="padding: 20px; border-bottom: 1px solid rgba(106, 17, 203, 0.3);">
+                <h2 style="color: var(--primary); margin-bottom: 20px;">Imasa Chat</h2>
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <div class="bot-avatar" id="userAvatar">👤</div>
+                    <div>
+                        <div id="usernameDisplay">Гость</div>
+                        <div style="font-size: 12px; color: var(--success);" id="userStatus">● В сети</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="padding: 20px; flex: 1; overflow-y: auto;">
+                <h3 style="margin-bottom: 15px; color: var(--text);">Чаты</h3>
+                <div id="chatsList">
+                    <!-- Список чатов -->
+                </div>
+                
+                <h3 style="margin: 30px 0 15px 0; color: var(--text);">Боты</h3>
+                <div id="botsList">
+                    <!-- Список ботов -->
+                </div>
+                
+                <!-- Рандомер -->
+                <div class="randomizer-section">
+                    <h4 style="color: var(--warning); margin-bottom: 15px;">
+                        <i class="fas fa-random"></i> Рандомеры
+                    </h4>
+                    <div class="random-number" id="randomNumber">0</div>
+                    <button class="btn btn-warning" id="generateRandom" style="width: 100%;">
+                        <i class="fas fa-dice"></i> Сгенерировать число
+                    </button>
+                    <div style="margin-top: 15px; font-size: 14px; color: var(--text);">
+                        Боты крутят раз в час
+                    </div>
+                </div>
+                
+                <!-- Создание группы -->
+                <div class="group-creator">
+                    <h4 style="color: var(--info); margin-bottom: 15px;">
+                        <i class="fas fa-users"></i> Создать группу
+                    </h4>
+                    <input type="text" id="groupName" class="form-control" placeholder="Название группы" style="margin-bottom: 10px;">
+                    <button class="btn btn-success" id="createGroupBtn" style="width: 100%;">
+                        <i class="fas fa-plus"></i> Создать группу
+                    </button>
+                </div>
+            </div>
+            
+            <div style="padding: 20px; border-top: 1px solid rgba(106, 17, 203, 0.3);">
+                <button class="btn" id="settingsBtn" style="width: 100%;">
+                    <i class="fas fa-cog"></i> Настройки
+                </button>
+                <button class="btn btn-danger" id="logoutBtn" style="width: 100%; margin-top: 10px;">
+                    <i class="fas fa-sign-out-alt"></i> Выйти
+                </button>
+            </div>
+        </div>
+
+        <!-- Основная область чата -->
+        <div class="chat-area">
+            <img class="wallpaper" id="chatWallpaper" src="" alt="Wallpaper">
+            
+            <div style="padding: 20px; background: rgba(26, 26, 26, 0.9); border-bottom: 1px solid rgba(106, 17, 203, 0.3);">
+                <h2 id="activeChatName">Общий чат</h2>
+                <div style="color: var(--success); font-size: 14px;" id="activeChatStatus">
+                    <i class="fas fa-circle"></i> Онлайн
+                </div>
+            </div>
+            
+            <div id="chatMessages" style="flex: 1; padding: 20px; overflow-y: auto; background: rgba(10, 10, 10, 0.7);">
+                <!-- Сообщения -->
+            </div>
+            
+            <!-- Поле ввода -->
+            <div style="padding: 20px; background: rgba(26, 26, 26, 0.9); border-top: 1px solid rgba(106, 17, 203, 0.3);">
+                <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                    <button class="btn" id="stickerBtn">
+                        <i class="far fa-smile"></i> Стикеры
+                    </button>
+                    <button class="btn" id="botResponseBtn">
+                        <i class="fas fa-robot"></i> Ответ бота
+                    </button>
+                </div>
+                
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="messageInput" class="form-control" placeholder="Введите сообщение...">
+                    <button class="btn" id="sendMessageBtn">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+                
+                <!-- Выбор стикеров -->
+                <div class="sticker-picker hidden" id="stickerPicker">
+                    <!-- Стикеры будут здесь -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Панель настроек -->
+        <div class="settings-panel" id="settingsPanel">
+            <h2 style="color: var(--primary); margin-bottom: 30px;">
+                <i class="fas fa-cog"></i> Настройки
+            </h2>
+            
+            <!-- Настройки темы -->
+            <div class="settings-section">
+                <h3><i class="fas fa-palette"></i> Внешний вид</h3>
+                <div class="form-group">
+                    <label>Цвет темы</label>
+                    <div class="color-picker">
+                        <div class="color-option active" style="background: #6a11cb;" data-color="purple"></div>
+                        <div class="color-option" style="background: #2575fc;" data-color="blue"></div>
+                        <div class="color-option" style="background: #4caf50;" data-color="green"></div>
+                        <div class="color-option" style="background: #ff9800;" data-color="orange"></div>
+                        <div class="color-option" style="background: #f44336;" data-color="red"></div>
+                        <div class="color-option" style="background: #9c27b0;" data-color="deep-purple"></div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Обои чата</label>
+                    <select id="wallpaperSelect" class="form-control">
+                        <option value="none">Нет</option>
+                        <option value="gradient">Градиент</option>
+                        <option value="space">Космос</option>
+                        <option value="abstract">Абстракция</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="animationsToggle" checked> Анимации
+                    </label>
+                </div>
+            </div>
+            
+            <!-- Настройки ботов -->
+            <div class="settings-section">
+                <h3><i class="fas fa-robot"></i> Управление ботами</h3>
+                <div id="botsSettings">
+                    <!-- Настройки каждого бота -->
+                </div>
+            </div>
+            
+            <!-- Настройки групп -->
+            <div class="settings-section">
+                <h3><i class="fas fa-users"></i> Мои группы</h3>
+                <div id="userGroups">
+                    <!-- Список групп пользователя -->
+                </div>
+            </div>
+            
+            <!-- Настройки уведомлений -->
+            <div class="settings-section">
+                <h3><i class="fas fa-bell"></i> Уведомления</h3>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="soundToggle" checked> Звук сообщений
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="notificationsToggle" checked> Уведомления
+                    </label>
+                </div>
+            </div>
+            
+            <button class="btn btn-danger" id="closeSettings" style="width: 100%;">
+                <i class="fas fa-times"></i> Закрыть настройки
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Данные приложения
+        let currentUser = null;
+        let currentChat = 'general';
+        let settings = {
+            theme: 'purple',
+            wallpaper: 'none',
+            animations: true,
+            sound: true,
+            notifications: true
+        };
+        
+        // База ботов (7 ботов с разными характерами)
+        const bots = [
+            {
+                id: 'funny',
+                name: 'Шутник 🤣',
+                avatar: '🤣',
+                personality: 'веселый',
+                responses: {
+                    'привет': ['Ха-ха! Привет!', 'О, приветик! 😄', 'Йоу! Как сам?'],
+                    'как дела': ['Все шутки да шутки!', 'Отлично, только что пошутил!', 'Дела? Да норм, шучу!'],
+                    'шутка': ['Что программист сказал перед смертью? "Hello world..." 😂', 
+                             'Почему компьютер не пьет? Боится багов!']
+                }
+            },
+            {
+                id: 'wise',
+                name: 'Мудрец 🧠',
+                avatar: '🧠',
+                personality: 'умный',
+                responses: {
+                    'привет': ['Здравствуй, искатель знаний.', 'Приветствую тебя.', 'Добро пожаловать.'],
+                    'как дела': ['Мудрость растет с каждым днем.', 'Все идет своим чередом.', 'Познаю мир.'],
+                    'вопрос': ['Истина где-то рядом.', 'Задай правильный вопрос.', 'Подумай сам сначала.']
+                }
+            },
+            {
+                id: 'angry',
+                name: 'Сердитый 😠',
+                avatar: '😠',
+                personality: 'сердитый',
+                responses: {
+                    'привет': ['Чего надо?', 'Не мешай!', '...'],
+                    'как дела': ['Отстань!', 'Плохо, из-за таких как ты!', 'Не твое дело!'],
+                    'помощь': ['Сам разбирайся!', 'Я не справочная!', 'Гугл в помощь!']
+                }
+            },
+            {
+                id: 'friendly',
+                name: 'Дружелюбный 🤗',
+                avatar: '🤗',
+                personality: 'дружелюбный',
+                responses: {
+                    'привет': ['Привет, друг! 🤗', 'Рад тебя видеть!', 'Здравствуй!'],
+                    'как дела': ['Все прекрасно! А у тебя?', 'Супер! Спасибо, что спросил!', 'Хорошо!'],
+                    'спасибо': ['Всегда пожалуйста!', 'Рад помочь!', 'Обращайся!']
+                }
+            },
+            {
+                id: 'romantic',
+                name: 'Романтик ❤️',
+                avatar: '❤️',
+                personality: 'романтичный',
+                responses: {
+                    'привет': ['Привет, солнышко! 🌹', 'Здравствуй, прекрасный человек!', 'Приветствую!'],
+                    'любовь': ['Любовь вечна! ❤️', 'Любить - значит жить!', 'Сердце бьется для тебя!'],
+                    'поэзия': ['Роза красная, фиалка синяя...', 'Луна светит, звезды горят...']
+                }
+            },
+            {
+                id: 'gamer',
+                name: 'Геймер 🎮',
+                avatar: '🎮',
+                personality: 'игровой',
+                responses: {
+                    'привет': ['GG! Привет!', 'Нуб или про?', 'В игре?'],
+                    'игра': ['Давай катку!', 'Погнали рейдить!', 'Босс ждет!'],
+                    'победа': ['ВИКТОРИЯ! 🏆', 'GG EZ!', 'Красава!']
+                }
+            },
+            {
+                id: 'mysterious',
+                name: 'Загадочный 🔮',
+                avatar: '🔮',
+                personality: 'загадочный',
+                responses: {
+                    'привет': ['...Привет...', 'Ты пришел...', 'Я ждал тебя...'],
+                    'будущее': ['Все предопределено...', 'Судьба не избежна...', 'Звезды говорят...'],
+                    'тайна': ['Знание скрыто...', 'Истина где-то рядом...', 'Продолжай искать...']
+                }
+            }
+        ];
+        
+        // Группы
+        let userGroups = [];
+        
+        // Стикеры
+        const stickers = ['😀', '😂', '🤣', '😍', '🥰', '😎', '🤔', '😴', '🤯', '🥳', '🤖', '👻', '💀', '👑', '🎮', '🏆', '❤️', '🔥', '🌟', '🎉'];
+        
+        // DOM элементы
+        const authPanel = document.getElementById('authPanel');
+        const mainApp = document.getElementById('mainApp');
+        const loginTab = document.getElementById('loginTab');
+        const registerTab = document.getElementById('registerTab');
+        const authTabs = document.querySelectorAll('.auth-tab');
+        const loginForm = document.getElementById('loginForm');
+        const registerForm = document.getElementById('registerForm');
+        const userAvatar = document.getElementById('userAvatar');
+        const usernameDisplay = document.getElementById('usernameDisplay');
+        const chatsList = document.getElementById('chatsList');
+        const botsList = document.getElementById('botsList');
+        const chatMessages = document.getElementById('chatMessages');
+        const messageInput = document.getElementById('messageInput');
+        const sendMessageBtn = document.getElementById('sendMessageBtn');
+        const activeChatName = document.getElementById('activeChatName');
+        const activeChatStatus = document.getElementById('activeChatStatus');
+        const settingsBtn = document.getElementById('settingsBtn');
+        const settingsPanel = document.getElementById('settingsPanel');
+        const closeSettings = document.getElementById('closeSettings');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const stickerBtn = document.getElementById('stickerBtn');
+        const stickerPicker = document.getElementById('stickerPicker');
+        const botResponseBtn = document.getElementById('botResponseBtn');
+        const randomNumber = document.getElementById('randomNumber');
+        const generateRandom = document.getElementById('generateRandom');
+        const groupName = document.getElementById('groupName');
+        const createGroupBtn = document.getElementById('createGroupBtn');
+        const wallpaperSelect = document.getElementById('wallpaperSelect');
+        const chatWallpaper = document.getElementById('chatWallpaper');
+        const colorOptions = document.querySelectorAll('.color-option');
+        const animationsToggle = document.getElementById('animationsToggle');
+        const soundToggle = document.getElementById('soundToggle');
+        const notificationsToggle = document.getElementById('notificationsToggle');
+        
+        // Инициализация
+        document.addEventListener('DOMContentLoaded', initApp);
+        
+        function initApp() {
+            // Загрузка сохраненных данных
+            loadUserData();
+            loadSettings();
+            loadGroups();
+            
+            // Настройка событий
+            setupEventListeners();
+            
+            // Инициализация интерфейса
+            renderBots();
+            renderStickers();
+            updateTheme();
+            updateWallpaper();
+            
+            // Автовход если пользователь сохранен
+            if (currentUser) {
+                showMainApp();
+            }
+        }
+        
+        function setupEventListeners() {
+            // Переключение вкладок авторизации
+            authTabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    authTabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    
+                    loginTab.classList.toggle('active', tab.dataset.tab === 'login');
+                    registerTab.classList.toggle('active', tab.dataset.tab === 'register');
+                });
+            });
+            
+            // Форма входа
+            loginForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const username = document.getElementById('loginUsername').value;
+                const password = document.getElementById('loginPassword').value;
+                
+                if (username && password) {
+                    loginUser(username, password);
+                }
+            });
+            
+            // Форма регистрации
+            registerForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const username = document.getElementById('registerUsername').value;
+                const email = document.getElementById('registerEmail').value;
+                const password = document.getElementById('registerPassword').value;
+                const avatar = document.getElementById('registerAvatar').value || '👤';
+                
+                if (username && password) {
+                    registerUser(username, email, password, avatar);
+                }
+            });
+            
+            // Отправка сообщения
+            sendMessageBtn.addEventListener('click', sendMessage);
+            messageInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') sendMessage();
+            });
+            
+            // Открытие/закрытие настроек
+            settingsBtn.addEventListener('click', () => {
+                settingsPanel.classList.add('active');
+                renderBotSettings();
+                renderUserGroups();
+            });
+            
+            closeSettings.addEventListener('click', () => {
+                settingsPanel.classList.remove('active');
+            });
+            
+            // Выход
+            logoutBtn.addEventListener('click', logoutUser);
+            
+            // Стикеры
+            stickerBtn.addEventListener('click', () => {
+                stickerPicker.classList.toggle('hidden');
+            });
+            
+            // Ответ бота
+            botResponseBtn.addEventListener('click', generateBotResponse);
+            
+            // Рандомер
+            generateRandom.addEventListener('click', generateRandomNumber);
+            
+            // Создание группы
+            createGroupBtn.addEventListener('click', createGroup);
+            
+            // Настройки
+            colorOptions.forEach(option => {
+                option.addEventListener('click', () => {
+                    colorOptions.forEach(o => o.classList.remove('active'));
+                    option.classList.add('active');
+                    settings.theme = option.dataset.color;
+                    updateTheme();
+                    saveSettings();
+                });
+            });
+            
+            wallpaperSelect.addEventListener('change', updateWallpaper);
+            animationsToggle.addEventListener('change', saveSettings);
+            soundToggle.addEventListener('change', saveSettings);
+            notificationsToggle.addEventListener('change', saveSettings);
+            
+            // Автогенерация чисел ботами
+            setInterval(botRandomActivity, 3600000); // Каждый час
+            
+            // Автообщение ботов в группах
+            setInterval(groupBotActivity, 600000); // Каждые 10 минут
+        }
+        
+        // Функции авторизации
+        function loginUser(username, password) {
+            const users = JSON.parse(localStorage.getItem('imasaUsers') || '[]');
+            const user = users.find(u => u.username === username && u.password === password);
+            
+            if (user) {
+                currentUser = user;
+                localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                showMainApp();
+                showNotification(`Добро пожаловать, ${user.username}!`);
+            } else {
+                showNotification('Неверный логин или пароль', 'error');
+            }
+        }
+        
+        function registerUser(username, email, password, avatar) {
+            const users = JSON.parse(localStorage.getItem('imasaUsers') || '[]');
+            
+            if (users.find(u => u.username === username)) {
+                showNotification('Пользователь уже существует', 'error');
+                return;
+            }
+            
+            const newUser = {
+                id: Date.now().toString(),
+                username,
+                email,
+                password,
+                avatar,
+                createdAt: new Date().toISOString()
+            };
+            
+            users.push(newUser);
+            localStorage.setItem('imasaUsers', JSON.stringify(users));
+            
+            currentUser = newUser;
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            
+            showMainApp();
+            showNotification('Регистрация успешна!');
+            
+            // Создаем первую группу для нового пользователя
+            createNewUserGroup();
+        }
+        
+        function logoutUser() {
+            currentUser = null;
+            localStorage.removeItem('currentUser');
+            authPanel.classList.remove('hidden');
+            mainApp.classList.add('hidden');
+            showNotification('Вы вышли из системы', 'warning');
+        }
+        
+        function showMainApp() {
+            authPanel.classList.add('hidden');
+            mainApp.classList.remove('hidden');
+            
+            userAvatar.textContent = currentUser.avatar;
+            usernameDisplay.textContent = currentUser.username;
+            
+            renderChats();
+        }
+        
+        // Функции чата
+        function sendMessage() {
+            const text = messageInput.value.trim();
+            if (!text || !currentUser) return;
+            
+            addMessage(text, 'user', currentUser.username);
+            messageInput.value = '';
+            
+            // Автоответ бота
+            setTimeout(() => {
+                const bot = getRandomBot();
+                const response = generateBotAnswer(bot, text);
+                addMessage(response, 'bot', bot.name);
+            }, 1000 + Math.random() * 2000);
+        }
+        
+        function addMessage(text, sender, senderName) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender === 'user' ? 'user-message' : 'bot-message'}`;
+            messageDiv.style.cssText = `
+                padding: 12px;
+                margin: 10px 0;
+                border-radius: 15px;
+                max-width: 70%;
+                ${sender === 'user' ? 'margin-left: auto; background: var(--primary);' : 'background: var(--secondary);'}
+                color: white;
+                animation: fadeIn 0.3s ease;
+            `;
+            
+            messageDiv.innerHTML = `
+                <div style="font-weight: bold; margin-bottom: 5px;">${senderName}</div>
+                <div>${text}</div>
+                <div style="text-align: right; font-size: 12px; margin-top: 5px; opacity: 0.8;">
+                    ${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                </div>
+            `;
+            
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+        
+        // Функции ботов
+        function renderBots() {
+            botsList.innerHTML = '';
+            bots.forEach(bot => {
+                const botElement = document.createElement('div');
+                botElement.className = 'bot-item';
+                botElement.style.cssText = `
+                    display: flex;
+                    align-items: center;
+                    gap: 15px;
+                    padding: 12px;
+                    margin-bottom: 10px;
+                    background: rgba(255, 255, 255, 0.05);
+                    border-radius: 10px;
+                    cursor: pointer;
+                    transition: all 0.3s;
+                `;
+                botElement.innerHTML = `
+                    <div class="bot-avatar">${bot.avatar}</div>
+                    <div>
+                        <div style="font-weight: bold;">${bot.name}</div>
+                        <div style="font-size: 12px; color: var(--text); opacity: 0.8;">
+                            ${bot.personality}
+                        </div>
+                    </div>
+                `;
+                
+                botElement.addEventListener('click', () => {
+                    const response = getBotGreeting(bot);
+                    addMessage(response, 'bot', bot.name);
+                });
+                
+                botsList.appendChild(botElement);
+            });
+        }
+        
+        function getRandomBot() {
+            return bots[Math.floor(Math.random() * bots.length)];
+        }
+        
+        function generateBotAnswer(bot, userMessage) {
+            const lowerMessage = userMessage.toLowerCase();
+            
+            for (const [trigger, responses] of Object.entries(bot.responses)) {
+                if (lowerMessage.includes(trigger)) {
+                    return responses[Math.floor(Math.random() * responses.length)];
+                }
+            }
+            
+            // Стандартные ответы по характеру бота
+            const defaultResponses = {
+                'веселый': ['Ха-ха! Что сказал?', 'Смешно!', 'Продолжай!'],
+                'умный': ['Интересная мысль.', 'Продолжайте развивать эту идею.', 'Верно.'],
+                'сердитый': ['Что?', 'Не понял.', 'Повтори.'],
+                'дружелюбный': ['Класс!', 'Здорово!', 'Понял тебя!'],
+                'романтичный': ['Как прекрасно!', 'Волнующе!', 'Чудесно!'],
+                'игровой': ['GG!', 'Неплохо!', 'Круто!'],
+                'загадочный': ['Интригующе...', 'Продолжай...', 'Любопытно...']
+            };
+            
+            return defaultResponses[bot.personality]?.[0] || 'Интересно...';
+        }
+        
+        function getBotGreeting(bot) {
+            const greetings = {
+                'веселый': 'Привет! Давай повеселимся! 😄',
+                'умный': 'Здравствуй. Готов к дискуссии.',
+                'сердитый': 'Чего надо?',
+                'дружелюбный': 'Привет, друг! Рад тебя видеть! 🤗',
+                'романтичный': 'Привет, прекрасный незнакомец! ❤️',
+                'игровой': 'Йоу! Готов к игре? 🎮',
+                'загадочный': 'Ты нашел меня...'
+            };
+            
+            return greetings[bot.personality] || 'Привет.';
+        }
+        
+        function generateBotResponse() {
+            if (!currentUser) return;
+            
+            const bot = getRandomBot();
+            const responses = [
+                'Как дела?',
+                'Что нового?',
+                'Расскажи что-нибудь!',
+                'Поговори со мной!',
+                'Мне скучно!'
+            ];
+            
+            const randomQuestion = responses[Math.floor(Math.random() * responses.length)];
+            const botAnswer = generateBotAnswer(bot, randomQuestion);
+            
+            addMessage(randomQuestion, 'user', currentUser.username);
+            setTimeout(() => {
+                addMessage(botAnswer, 'bot', bot.name);
+            }, 1000);
+        }
+        
+        function renderBotSettings() {
+            const container = document.getElementById('botsSettings');
+            container.innerHTML = '';
+            
+            bots.forEach(bot => {
+                const botSetting = document.createElement('div');
+                botSetting.className = 'bot-setting';
+                botSetting.style.cssText = `
+                    padding: 15px;
+                    margin-bottom: 10px;
+                    background: rgba(255, 255, 255, 0.05);
+                    border-radius: 10px;
+                `;
+                
+                botSetting.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
+                        <div class="bot-avatar">${bot.avatar}</div>
+                        <div style="flex: 1;">
+                            <div style="font-weight: bold;">${bot.name}</div>
+                            <div style="font-size: 12px; color: var(--text); opacity: 0.8;">
+                                Тип: ${bot.personality}
+                            </div>
+                        </div>
+                    </div>
+                    <div style="font-size: 14px;">
+                        <strong>Ответы:</strong><br>
+                        ${Object.entries(bot.responses).map(([key, val]) => 
+                            `${key}: ${val[0]}`
+                        ).join('<br>')}
+                    </div>
+                `;
+                
+                container.appendChild(botSetting);
+            });
+        }
+        
+        // Функции рандомера
+        function generateRandomNumber() {
+            const number = Math.floor(Math.random() * 1000) + 1;
+            randomNumber.textContent = number;
+            randomNumber.style.animation = 'pulse 0.5s ease';
+            
+            setTimeout(() => {
+                randomNumber.style.animation = '';
+            }, 500);
+            
+            addMessage(`Сгенерировано число: ${number}`, 'system', 'Рандомер');
+            saveRandomNumber(number);
+        }
+        
+        function botRandomActivity() {
+            const number = Math.floor(Math.random() * 1000) + 1;
+            const bot = getRandomBot();
+            
+            addMessage(`Бот ${bot.name} сгенерировал число: ${number}`, 'system', 'Авторандом');
+            saveRandomNumber(number);
+            
+            if (Math.random() > 0.7) { // 30% шанс что пользователь тоже сгенерирует
+                setTimeout(() => {
+                    generateRandomNumber();
+                }, Math.random() * 5000);
+            }
+        }
+        
+        function saveRandomNumber(number) {
+            const numbers = JSON.parse(localStorage.getItem('randomNumbers') || '[]');
+            numbers.push({
+                number,
+                timestamp: new Date().toISOString(),
+                generatedBy: 'bot'
+            });
+            localStorage.setItem('randomNumbers', JSON.stringify(numbers));
+        }
+        
+        // Функции групп
+        function createGroup() {
+            const name = groupName.value.trim();
+            if (!name || !currentUser) return;
+            
+            const group = {
+                id: Date.now().toString(),
+                name,
+                owner: currentUser.id,
+                members: ['user', ...bots.slice(0, 3).map(b => b.id)], // 3 бота по умолчанию
+                maxBots: 10,
+                createdAt: new Date().toISOString()
+            };
+            
+            userGroups.push(group);
+            saveGroups();
+            
+            groupName.value = '';
+            showNotification(`Группа "${name}" создана!`);
+            
+            // Начинаем автообщение в группе
+            startGroupChat(group);
+        }
+        
+        function createNewUserGroup() {
+            const group = {
+                id: 'welcome_group',
+                name: 'Добро пожаловать!',
+                owner: currentUser.id,
+                members: ['user', 'friendly', 'wise', 'funny'],
+                maxBots: 10,
+                createdAt: new Date().toISOString()
+            };
+            
+            userGroups.push(group);
+            saveGroups();
+            
+            setTimeout(() => {
+                startGroupChat(group);
+            }, 2000);
+        }
+        
+        function startGroupChat(group) {
+            const groupBots = bots.filter(b => group.members.includes(b.id));
+            
+            // Первое сообщение от системы
+            addMessage(`Создана группа "${group.name}"`, 'system', 'Система');
+            
+            // Приветственные сообщения от ботов
+            groupBots.forEach((bot, index) => {
+                setTimeout(() => {
+                    const greeting = getBotGreeting(bot);
+                    addMessage(greeting, 'bot', bot.name);
+                }, 1000 * (index + 1));
+            });
+        }
+        
+        function groupBotActivity() {
+            if (!currentUser || userGroups.length === 0) return;
+            
+            userGroups.forEach(group => {
+                if (Math.random() > 0.5) { // 50% шанс активности в группе
+                    const activeBots = bots.filter(b => group.members.includes(b.id));
+                    if (activeBots.length > 0) {
+                        const bot1 = activeBots[Math.floor(Math.random() * activeBots.length)];
+                        const bot2 = activeBots[Math.floor(Math.random() * activeBots.length)];
+                        
+                        if (bot1 !== bot2) {
+                            const topics = ['погода', 'технологии', 'искусство', 'спорт', 'наука'];
+                            const topic = topics[Math.floor(Math.random() * topics.length)];
+                            
+                            setTimeout(() => {
+                                addMessage(`Что думаешь о ${topic}?`, 'bot', bot1.name);
+                            }, 1000);
+                            
+                            setTimeout(() => {
+                                const responses = [
+                                    `О, ${topic}! Это интересно.`,
+                                    `Я люблю ${topic}!`,
+                                    `${topic}... хм, сложная тема.`,
+                                    `Давай поговорим о ${topic}!`
+                                ];
+                                addMessage(responses[Math.floor(Math.random() * responses.length)], 'bot', bot2.name);
+                            }, 3000);
+                        }
+                    }
+                }
+            });
+        }
+        
+        function renderUserGroups() {
+            const container = document.getElementById('userGroups');
+            container.innerHTML = '';
+            
+            if (userGroups.length === 0) {
+                container.innerHTML = '<p>У вас еще нет групп</p>';
+                return;
+            }
+            
+            userGroups.forEach(group => {
+                const groupElement = document.createElement('div');
+                groupElement.className = 'group-item';
+                groupElement.style.cssText = `
+                    padding: 15px;
+                    margin-bottom: 10px;
+                    background: rgba(255, 255, 255, 0.05);
+                    border-radius: 10px;
+                `;
+                
+                const botCount = group.members.filter(m => m !== 'user').length;
+                
+                groupElement.innerHTML = `
+                    <div style="font-weight: bold; margin-bottom: 5px;">${group.name}</div>
+                    <div style="font-size: 14px; color: var(--text); opacity: 0.8;">
+                        Ботов: ${botCount}/${group.maxBots}<br>
+                        Создана: ${new Date(group.createdAt).toLocaleDateString()}
+                    </div>
+                    <button class="btn" onclick="joinGroup('${group.id}')" style="margin-top: 10px; width: 100%;">
+                        <i class="fas fa-sign-in-alt"></i> Войти в группу
+                    </button>
+                `;
+                
+                container.appendChild(groupElement);
+            });
+        }
+        
+        // Функции стикеров
+        function renderStickers() {
+            stickerPicker.innerHTML = '';
+            
+            stickers.forEach(sticker => {
+                const stickerElement = document.createElement('div');
+                stickerElement.className = 'sticker';
+                stickerElement.textContent = sticker;
+                stickerElement.addEventListener('click', () => sendSticker(sticker));
+                stickerPicker.appendChild(stickerElement);
+            });
+        }
+        
+        function sendSticker(sticker) {
+            if (!currentUser) return;
+            
+            addMessage(sticker, 'user', currentUser.username);
+            stickerPicker.classList.add('hidden');
+            
+            // Ответ бота на стикер
+            setTimeout(() => {
+                const bot = getRandomBot();
+                const stickerResponses = [
+                    'Классный стикер!',
+                    '😂',
+                    'Мне нравится!',
+                    'Интересно...',
+                    'Понравился стикер!'
+                ];
+                const response = stickerResponses[Math.floor(Math.random() * stickerResponses.length)];
+                addMessage(response, 'bot', bot.name);
+            }, 1000);
+        }
+        
+        // Функции чатов
+        function renderChats() {
+            chatsList.innerHTML = '';
+            
+            const chatItems = [
+                { id: 'general', name: 'Общий чат', status: 'online' },
+                ...bots.map(bot => ({ id: bot.id, name: bot.name, status: 'online' }))
+            ];
+            
+            chatItems.forEach(chat => {
+                const chatElement = document.createElement('div');
+                chatElement.className = 'chat-item';
+                chatElement.style.cssText = `
+                    padding: 12px;
+                    margin-bottom: 10px;
+                    background: rgba(255, 255, 255, 0.05);
+                    border-radius: 10px;
+                    cursor: pointer;
+                    transition: all 0.3s;
+                `;
+                chatElement.innerHTML = `
+                    <div style="font-weight: bold;">${chat.name}</div>
+                    <div style="font-size: 12px; color: var(${chat.status === 'online' ? '--success' : '--text'}); opacity: 0.8;">
+                        ${chat.status === 'online' ? '● Онлайн' : '○ Оффлайн'}
+                    </div>
+                `;
+                
+                chatElement.addEventListener('click', () => switchChat(chat.id, chat.name));
+                chatsList.appendChild(chatElement);
+            });
+        }
+        
+        function switchChat(chatId, chatName) {
+            currentChat = chatId;
+            activeChatName.textContent = chatName;
+            activeChatStatus.innerHTML = `<i class="fas fa-circle"></i> Онлайн`;
+            
+            // Очищаем сообщения для нового чата
+            chatMessages.innerHTML = '';
+            
+            // Добавляем приветственное сообщение
+            if (chatId === 'general') {
+                addMessage('Добро пожаловать в общий чат!', 'system', 'Система');
+            } else {
+                const bot = bots.find(b => b.id === chatId);
+                if (bot) {
+                    addMessage(getBotGreeting(bot), 'bot', bot.name);
+                }
+            }
+        }
+        
+        // Функции настроек
+        function updateTheme() {
+            const themeColors = {
+                'purple': { primary: '#6a11cb', secondary: '#2575fc' },
+                'blue': { primary: '#2196f3', secondary: '#1976d2' },
+                'green': { primary: '#4caf50', secondary: '#388e3c' },
+                'orange': { primary: '#ff9800', secondary: '#f57c00' },
+                'red': { primary: '#f44336', secondary: '#d32f2f' },
+                'deep-purple': { primary: '#9c27b0', secondary: '#7b1fa2' }
+            };
+            
+            const colors = themeColors[settings.theme] || themeColors.purple;
+            
+            document.documentElement.style.setProperty('--primary', colors.primary);
+            document.documentElement.style.setProperty('--secondary', colors.secondary);
+            
+            // Обновляем активный цвет в палитре
+            colorOptions.forEach(option => {
+                option.classList.toggle('active', option.dataset.color === settings.theme);
+            });
+        }
+        
+        function updateWallpaper() {
+            const wallpaper = wallpaperSelect.value;
+            settings.wallpaper = wallpaper;
+            
+            const wallpapers = {
+                'none': '',
+                'gradient': 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                'space': 'https://images.unsplash.com/photo-1446776653964-20c1d3a81b06?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
+                'abstract': 'https://images.unsplash.com/photo-1550684376-efcbd6e3f031?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80'
+            };
+            
+            if (wallpaper === 'gradient') {
+                chatWallpaper.src = '';
+                chatWallpaper.style.background = wallpapers.gradient;
+            } else if (wallpaper === 'none') {
+                chatWallpaper.src = '';
+                chatWallpaper.style.background = 'none';
+            } else {
+                chatWallpaper.src = wallpapers[wallpaper];
+                chatWallpaper.style.background = 'none';
+            }
+            
+            saveSettings();
+        }
+        
+        // Функции сохранения/загрузки
+        function loadUserData() {
+            const savedUser = localStorage.getItem('currentUser');
+            if (savedUser) {
+                currentUser = JSON.parse(savedUser);
+            }
+        }
+        
+        function loadSettings() {
+            const savedSettings = localStorage.getItem('imasaSettings');
+            if (savedSettings) {
+                settings = JSON.parse(savedSettings);
+                
+                // Применяем настройки к интерфейсу
+                wallpaperSelect.value = settings.wallpaper || 'none';
+                animationsToggle.checked = settings.animations !== false;
+                soundToggle.checked = settings.sound !== false;
+                notificationsToggle.checked = settings.notifications !== false;
+            }
+        }
+        
+        function saveSettings() {
+            settings.animations = animationsToggle.checked;
+            settings.sound = soundToggle.checked;
+            settings.notifications = notificationsToggle.checked;
+            localStorage.setItem('imasaSettings', JSON.stringify(settings));
+        }
+        
+        function loadGroups() {
+            const savedGroups = localStorage.getItem('userGroups');
+            if (savedGroups) {
+                userGroups = JSON.parse(savedGroups);
+            }
+        }
+        
+        function saveGroups() {
+            localStorage.setItem('userGroups', JSON.stringify(userGroups));
+        }
+        
+        // Вспомогательные функции
+        function showNotification(message, type = 'info') {
+            if (!settings.notifications) return;
+            
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px 20px;
+                background: ${type === 'error' ? 'var(--danger)' : type === 'warning' ? 'var(--warning)' : 'var(--primary)'};
+                color: white;
+                border-radius: 10px;
+                z-index: 1000;
+                animation: fadeIn 0.3s ease;
+            `;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+        
+        // Глобальные функции для кнопок
+        window.joinGroup = function(groupId) {
+            const group = userGroups.find(g => g.id === groupId);
+            if (group) {
+                switchChat(`group_${groupId}`, group.name);
+                showNotification(`Вы вошли в группу "${group.name}"`);
+            }
+        };
+    </script>
+</body>
+</html>
